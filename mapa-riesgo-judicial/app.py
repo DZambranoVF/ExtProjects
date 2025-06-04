@@ -1,78 +1,84 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-st.set_page_config(page_title="Mapa de Riesgo Judicial", layout="wide")
+st.set_page_config(page_title="Mapa de Riesgos por Rol", layout="wide")
 
-st.title("⚖️ Mapa de Riesgo - Rama Judicial")
-st.markdown("""
-📄 **Instrucciones:** Sube un archivo Excel con tres columnas:
-- `Riesgo`
-- `Probabilidad` (Baja, Media, Alta)
-- `Impacto` (Bajo, Medio, Alto)
+# Datos base por rol
+riesgos_data = {
+    "🟦 Observador": [
+        ("Intervención indebida en el proceso auditado", 3, 4),
+        ("Incumplimiento de la confidencialidad", 2, 5),
+        ("Falta de comprensión del propósito de la observación", 3, 3)
+    ],
+    "🟩 Auditor": [
+        ("Juicio sesgado o poco objetivo", 3, 5),
+        ("Falta de competencia técnica frente a normas específicas", 4, 4),
+        ("Hallazgos mal documentados o ambiguos", 3, 4)
+    ],
+    "🟨 Coordinador de Auditoría": [
+        ("Asignación de auditores sin competencia adecuada", 3, 5),
+        ("Mala planificación del alcance de auditorías", 4, 4),
+        ("Falta de seguimiento a acciones correctivas", 2, 5)
+    ]
+}
 
-Ejemplo:
-| Riesgo | Probabilidad | Impacto |
-|--------|--------------|---------|
-| Corrupción interna | Alta probabilidad | Alto impacto |
-""")
+# Clasificación de niveles
+def categorizar_riesgo(nivel):
+    if nivel <= 6:
+        return "✅ Bajo"
+    elif nivel <= 9:
+        return "🟡 Moderado"
+    elif nivel <= 12:
+        return "🟠 Alto"
+    elif nivel <= 15:
+        return "🔶 Muy alto"
+    else:
+        return "🔴 Crítico"
 
-# Subida del archivo
-archivo = st.file_uploader("📂 Carga tu archivo Excel", type=["xlsx"])
+# Título principal
+st.title("⚖️ Mapa de Riesgos por Rol")
 
-if archivo:
-    try:
-        df = pd.read_excel(archivo)
+puntaje_total = 0
 
-        st.success("✅ Archivo cargado correctamente")
-        st.markdown("Vista previa del archivo:")
-        st.dataframe(df)
+# Mostrar tabla por cada rol
+for rol, riesgos in riesgos_data.items():
+    st.subheader(rol)
+    riesgos_calculados = []
+    for nombre, prob, impacto in riesgos:
+        nivel = prob * impacto
+        categoria = categorizar_riesgo(nivel)
+        puntaje_total += nivel
+        riesgos_calculados.append([nombre, prob, impacto, nivel, categoria])
+    df = pd.DataFrame(riesgos_calculados, columns=["Riesgo", "📈 Probabilidad", "📉 Impacto", "🎯 Nivel", "🔍 Clasificación"])
+    st.dataframe(df)
 
-        # Validación de columnas necesarias
-        columnas_esperadas = {"Riesgo", "Probabilidad", "Impacto"}
-        if not columnas_esperadas.issubset(set(df.columns)):
-            st.error("❌ El archivo debe tener las columnas: Riesgo, Probabilidad, Impacto")
-        else:
-            # Pesos para cálculo de puntajes
-            pesos = {
-                "Bajo impacto": 1,
-                "Medio impacto": 2,
-                "Alto impacto": 3,
-                "Baja probabilidad": 1,
-                "Media probabilidad": 2,
-                "Alta probabilidad": 3
-            }
+# Mostrar puntaje final
+st.markdown("### 🧮 Puntaje Total de Riesgo")
+st.info(f"Tu puntaje acumulado es: **{puntaje_total}**")
 
-            puntaje_total = 0
-            asignaciones = []
+if puntaje_total >= 100:
+    st.success("🎉 ¡Ganaste! Riesgo crítico identificado correctamente.")
+else:
+    st.warning("🧐 Sigue evaluando. Aún puedes identificar riesgos mayores.")
 
-            for _, row in df.iterrows():
-                riesgo = row["Riesgo"]
-                probabilidad = row["Probabilidad"]
-                impacto = row["Impacto"]
-                puntaje = pesos.get(probabilidad, 0) * pesos.get(impacto, 0)
-                puntaje_total += puntaje
-                asignaciones.append({
-                    "⚠️ Riesgo": riesgo,
-                    "📈 Probabilidad": probabilidad,
-                    "📉 Impacto": impacto,
-                    "🎯 Puntaje": puntaje
-                })
+# Crear mapa de calor
+st.markdown("---")
+st.subheader("🔥 Mapa de Calor - Matriz de Riesgo")
 
-            df_resultado = pd.DataFrame(asignaciones)
-            st.markdown("---")
-            st.subheader("📊 Resultado del Mapa de Riesgo")
-            st.dataframe(df_resultado)
-            st.success(f"🏁 **Puntaje total del mapa de riesgos:** {puntaje_total}")
+matriz = []
+for impacto in range(5, 0, -1):
+    fila = []
+    for prob in range(1, 6):
+        nivel = prob * impacto
+        emoji = categorizar_riesgo(nivel).split()[0]
+        fila.append(f"{nivel} {emoji}")
+    matriz.append(fila)
 
-            # Descargar el resultado como Excel
-            st.download_button(
-                label="📥 Descargar resultados en Excel",
-                data=df_resultado.to_excel(index=False, engine='openpyxl'),
-                file_name="resultado_mapa_riesgo.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+df_matriz = pd.DataFrame(matriz, index=[f"{i} (Impacto)" for i in range(5, 0, -1)],
+                         columns=[f"{j} (Probabilidad)" for j in range(1, 6)])
 
-    except Exception as e:
+st.dataframe(df_matriz, height=350)
+
         st.error(f"❌ Error al procesar el archivo: {e}")
 else:
     st.info("👈 Esperando que subas un archivo Excel válido...")
