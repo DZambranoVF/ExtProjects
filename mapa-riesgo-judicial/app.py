@@ -73,8 +73,7 @@ for impacto in range(5, 0, -1):
         fila.append(f"{nivel} {emoji}")
     matriz.append(fila)
 
-df_matriz = pd.DataFrame(matriz, index=[f"{i} (Impacto)" for i in range(5, 0, -1)],
-                         columns=[f"{j} (Probabilidad)" for j in range(1, 6)])
+df_matriz = pd.DataFrame(matriz, index=[f"{i} (Impacto)" for i in range(5, 0, -1)],columns=[f"{j} (Probabilidad)" for j in range(1, 6)])
 
 st.dataframe(df_matriz, height=350)
 
