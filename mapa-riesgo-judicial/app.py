@@ -35,7 +35,6 @@ def categorizar_riesgo(nivel):
     else:
         return "🔴 Crítico"
 
-# Título principal
 st.title("⚖️ Mapa de Riesgos por Rol")
 
 puntaje_total = 0
@@ -79,6 +78,3 @@ df_matriz = pd.DataFrame(matriz, index=[f"{i} (Impacto)" for i in range(5, 0, -1
 
 st.dataframe(df_matriz, height=350)
 
-        st.error(f"❌ Error al procesar el archivo: {e}")
-else:
-    st.info("👈 Esperando que subas un archivo Excel válido...")
